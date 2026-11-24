@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huma Damai Kost</title>
+    <link rel="icon" type="image/jpeg" href="Logo Kost.jpg">
+    <link rel="apple-touch-icon" href="Logo Kost.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-huma-cream { background-color: #FAFAF7; }
+        .bg-huma-card { background-color: #F4F3EE; }
+        .bg-huma-brown { background-color: #8C532B; }
+        .text-huma-brown { color: #8C532B; }
+        .border-huma-brown { border-color: #8C532B; }
+        .bg-huma-sage { background-color: #849985; }
+        .text-huma-sage { color: #849985; }
+        .border-huma-sage { border-color: #849985; }
+    </style>
+    
+    <!-- FIREBASE SDK INTEGRATION (App, Auth & Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- KONFIGURASI EKSTERNAL (Tidak di-push ke GitHub) -->
+    <script src="config.js"></script>
+</head>
+<body class="bg-huma-cream text-stone-800 font-sans min-h-screen">
+
+    <!-- NAVBAR -->
+    <header class="bg-white border-b border-stone-200 shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="Logo Kost.jpg" alt="Logo Huma Damai Kost" class="h-10 w-auto object-contain rounded-md">
+                <div>
+                    <h1 class="text-lg font-bold text-huma-brown leading-tight">HUMA DAMAI</h1>
+                    <p class="text-[10px] tracking-widest text-huma-sage font-bold uppercase">KOST</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="syncBadge" class="hidden md:inline-block text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded">
+                    ⚡ Realtime Sync Active
+                </span>
+                <button id="btnLogin" onclick="toggleModalLogin(true)" class="bg-huma-card text-huma-brown text-xs font-bold px-4 py-2 rounded-lg shadow-sm border border-stone-300 hover:bg-stone-200 transition">
+                    🔑 Login Pengelola
+                </button>
+                <button id="btnLogout" onclick="logout()" class="hidden bg-rose-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow hover:bg-rose-800 transition">
+                    🚪 Logout Admin
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BANNER HERO + MINI MAP TERINTEGRASI -->
+    <section class="py-6">
+        <div class="container mx-auto px-4">
+            <div class="bg-huma-card border border-stone-300 rounded-2xl p-6 md:p-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-sm">
+                
+                <!-- Kolom Kiri: Judul, Alamat, Fasilitas & Mini Map -->
+                <div class="space-y-3 flex-1 w-full">
+                    <span id="bannerBadge" class="bg-huma-sage text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide transition-all">
+                        Tersedia Kamar Kosong
+                    </span>
+                    <h2 class="text-2xl md:text-3xl font-bold text-huma-brown">
+                        Disewakan Huma Damai Kost
+                    </h2>
+                    <div class="flex flex-wrap items-center gap-2 text-stone-600 text-sm leading-relaxed">
+                        <span>📍 Jl. Kinibalu, Gg. Damai No. 44, Palangka, Kec. Jekan Raya, Kota Palangka Raya, Kalimantan Tengah 74874</span>
+                        <button onclick="copyAlamatKost()" class="text-[11px] bg-white border border-stone-300 text-stone-700 px-2 py-0.5 rounded hover:bg-stone-100 transition font-semibold">
+                            📋 Salin Alamat
+                        </button>
+                    </div>
+                    
+                    <div class="pt-1 flex flex-wrap gap-2 text-xs font-semibold text-stone-700">
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">Kasur</span>
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">Lemari</span>
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">WiFi</span>
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">AC</span>
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">Meja</span>
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">Wastafel</span>
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">Kamar Mandi Dalam</span>
+                        <span class="bg-white border border-stone-200 px-3 py-1 rounded-md shadow-sm">Meteran Listrik Sendiri</span>
+                    </div>
+
+                    <!-- MINI MAP COMPACT DI DALAM BANNER -->
+                    <div class="pt-2 max-w-xl">
+                        <div class="relative w-full h-32 rounded-xl overflow-hidden border border-stone-300 bg-white shadow-sm">
+                            <iframe
+                                id="kostMapIframe"
+                                src="https://maps.google.com/maps?q=Kost%20Huma%20Damai%20Jl.%20Kinibalu%20Gg.%20Damai%20No.44%20Palangka%20Raya&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                                width="100%"
+                                height="100%"
+                                style="border:0;"
+                                allowfullscreen=""
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade">
+                            </iframe>
+                            <a href="https://maps.app.goo.gl/2of3VZW4MAZ5BGFy8?g_st=iw" target="_blank" rel="noopener noreferrer"
+                               class="absolute bottom-2 right-2 bg-huma-brown/95 hover:bg-amber-900 text-white text-[11px] font-bold px-3 py-1 rounded-lg shadow transition flex items-center gap-1">
+                                🗺️ Buka di Google Maps
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Info Harga & Tombol Booking -->
+                <div class="text-left lg:text-right w-full lg:w-auto border-t lg:border-t-0 pt-4 lg:pt-0 border-stone-300 space-y-2 shrink-0">
+                    <p class="text-xs text-stone-500 font-medium">Pilihan Tipe & Harga Sewa (Perbedaan di Luas Kamar)</p>
+                    <div class="bg-white/90 p-3.5 rounded-xl border border-stone-200 inline-block w-full space-y-1.5">
+                        <p class="text-sm font-extrabold text-huma-sage">🏠 Type A (5 Unit): Rp 1.400.000 <span class="text-[11px] font-normal text-stone-500">/ bln</span></p>
+                        <p class="text-sm font-extrabold text-huma-brown">🌟 Type B (3 Unit): Rp 1.600.000 <span class="text-[11px] font-normal text-stone-500">/ bln</span> <span class="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold">Coming Soon</span></p>
+                    </div>
+                    <p class="text-[11px] text-amber-800 font-semibold pt-1">📌 DP Booking: Rp 400.000 (Wajib KTP)</p>
+                    <button onclick="openBookingModal()" class="inline-flex items-center justify-center w-full lg:w-auto gap-2 mt-1 bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-lg hover:bg-emerald-700 transition shadow-sm">
+                       <span>💬 Booking via WA (085828215188)</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION TATA TERTIB & KETENTUAN KOST -->
+    <section class="py-4">
+        <div class="container mx-auto px-4">
+            <div class="bg-white p-6 md:p-8 rounded-2xl border border-stone-200 shadow-sm space-y-6">
+                <div class="border-b border-stone-200 pb-4 text-center md:text-left">
+                    <h3 class="text-xl font-bold text-huma-brown">📜 Tata Tertib & Ketentuan Huma Damai Kost</h3>
+                    <p class="text-stone-500 text-xs mt-1">Demi kenyamanan, keamanan, dan ketertiban bersama bagi seluruh penghuni</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm text-stone-700">
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-stone-800 text-base flex items-center gap-2">
+                            <span>📌</span> Aturan Penghuni & Tamu
+                        </h4>
+                        <ul class="list-disc list-inside space-y-2 text-xs leading-relaxed">
+                            <li><strong>Identitas:</strong> Wajib melampirkan foto KTP/SIM penyewa sebelum menempati kamar.</li>
+                            <li><strong>Ketertiban Malam:</strong> Dilarang berbicara kencang/berteriak pada malam hari, berbincang sewajarnya.</li>
+                            <li><strong>Aturan Tamu:</strong> Tamu boleh berkunjung ke kamar, namun <strong>dilarang menginap</strong> (kecuali pasangan suami-istri sah disertai bukti buku nikah).</li>
+                            <li><strong>Fasilitas:</strong> Dilarang memasang paku, stiker, atau gantungan yang merusak dinding/kamar. Hubungi Pemilik Kost jika butuh pemasangan.</li>
+                            <li><strong>Larangan Keras:</strong> Dilarang merokok di atas kasur, membawa hewan peliharaan, serta mengonsumsi minuman keras atau narkoba di area kost.</li>
+                            <li><strong>Hemat Energi:</strong> Mematikan AC, lampu, serta mengunci pintu dan jendela saat bepergian. Listrik menggunakan sistem token/pulsa per kamar.</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3 bg-huma-card p-4 rounded-xl border border-stone-300">
+                        <h4 class="font-bold text-huma-brown text-base flex items-center gap-2">
+                            <span>💳</span> Pembayaran & Booking
+                        </h4>
+                        <ul class="list-disc list-inside space-y-2 text-xs leading-relaxed">
+                            <li><strong>DP Booking:</strong> Sebesar <strong>Rp 400.000</strong> per kamar. Untuk uang yang sudah di DP / masuk ke rekening pemilik kost, <strong>tidak dapat di refund</strong>.</li>
+                            <li><strong>Jatuh Tempo:</strong> Pembayaran sewa bulanan dilakukan sesuai tanggal masuk kost. Tolong bayar tepat waktu atau selambat-lambatnya 3 hari (lewat 3 hari wajib mengosongkan kamar).</li>
+                            <li><strong>Metode Pembayaran:</strong> Hanya ditransfer ke Bank BRI. Nomor rekening diberikan saat konfirmasi via WA.</li>
+                            <li class="text-rose-700 font-bold">⚠️ Waspada Penipuan: Kami TIDAK PERNAH menerima pembayaran secara cash. Jika ada yang meminta pembayaran cash, segera laporkan ke WhatsApp 0858-2821-5188.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTENT SECTION -->
+    <div class="container mx-auto px-4 py-6 mb-12 space-y-12">
+
+        <!-- TAMPILAN CUSTOMER (KATALOG KAMAR) -->
+        <section id="customerView">
+            <div class="text-center mb-6">
+                <h3 class="text-xl font-bold text-huma-brown">Ketersediaan Kamar</h3>
+                <p class="text-stone-500 text-xs mt-1">Pilih tipe kamar di bawah ini atau klik langsung foto pada masing-masing kartu kamar</p>
+
+                <!-- FILTER KATALOG KAMAR -->
+                <div class="inline-flex flex-wrap justify-center gap-2 mt-4">
+                    <button id="filterAll" onclick="setCatalogFilter('Semua')" class="px-4 py-1.5 rounded-full text-xs font-bold bg-huma-brown text-white shadow-sm transition">
+                        Semua Tipe (8 Unit)
+                    </button>
+                    <button id="filterTypeA" onclick="setCatalogFilter('Type A')" class="px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 transition">
+                        🏠 Type A - Rp 1,4 Juta (5 Unit)
+                    </button>
+                    <button id="filterTypeB" onclick="setCatalogFilter('Type B')" class="px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 transition">
+                        🌟 Type B - Rp 1,6 Juta (3 Unit)
+                    </button>
+                </div>
+            </div>
+            <div id="katalogKamar" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- TAMPILAN PENGELOLA (ADMIN MODE) -->
+        <section id="adminView" class="hidden space-y-8">
+            <div class="bg-amber-50 border border-amber-300 text-amber-900 p-4 rounded-xl text-sm shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <strong>💡 Rekening Transfer Resmi:</strong> Bank BRI <code>0243-0104-XXXX-XXX</code> a.n <strong>Admin Huma Damai</strong>
+                </div>
+                <button onclick="copyRekeningAdmin()" class="bg-amber-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-amber-900 transition">
+                    📋 Salin No. Rekening BRI
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Form Input / Edit -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 h-fit">
+                    <h3 id="formTitle" class="text-base font-bold mb-4 text-huma-brown border-b pb-2">Tambah / Edit Data Kamar</h3>
+                    <form id="adminForm" onsubmit="simpanKamar(event)" class="space-y-4">
+                        <input type="hidden" id="editIndex" value="-1">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Tipe Kost</label>
+                            <select id="tipeKamar" onchange="autoSetHargaByTipe()" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none font-bold text-huma-brown">
+                                <option value="Type A" selected>🏠 Kost Type A (Rp 1.400.000/bln)</option>
+                                <option value="Type B">🌟 Kost Type B (Rp 1.600.000/bln)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Nomor Kamar</label>
+                            <input type="text" id="noKamar" required placeholder="Contoh: Kamar A1 / Kamar B1" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Status Kamar</label>
+                            <select id="statusKamar" onchange="toggleBookingFields()" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none font-bold">
+                                <option value="Kosong">🟢 Kosong (Tersedia)</option>
+                                <option value="Booking">🟡 Booking / DP (Rp 400.000)</option>
+                                <option value="Terisi">🔴 Terisi (Resmi)</option>
+                                <option value="Coming Soon">🟣 Coming Soon (Segera Hadir)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Nama Penghuni / Pemesan</label>
+                            <input type="text" id="namaPenghuni" placeholder="Kosongkan jika kamar belum terisi" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">No. HP / WhatsApp Penghuni</label>
+                            <input type="tel" id="noHpPenghuni" placeholder="Contoh: 081234567890" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Pekerjaan / Status</label>
+                            <input type="text" id="pekerjaanPenghuni" placeholder="Contoh: Dosen UPR / PNS Instansi X" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Verifikasi KTP (Wajib)</label>
+                            <select id="ktpStatus" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                                <option value="Sudah Terverifikasi">✅ KTP Sudah Diterima</option>
+                                <option value="Belum">❌ Belum Ada KTP</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Tanggal Masuk / Estimasi Masuk</label>
+                            <input type="date" id="tglMasuk" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                        </div>
+                        <div id="dpContainer" class="hidden">
+                            <label class="block text-xs font-semibold mb-1">Nominal DP (Rp)</label>
+                            <input type="number" id="nominalDp" placeholder="400000" value="400000" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Harga Bulanan (Rp)</label>
+                            <input type="number" id="hargaKamar" required value="1400000" placeholder="1400000" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 bg-huma-brown text-white py-2.5 rounded-lg text-sm font-bold hover:bg-amber-900 transition shadow-sm">
+                                Simpan Data
+                            </button>
+                            <button type="button" onclick="resetForm()" class="bg-stone-200 text-stone-700 px-3 py-2.5 rounded-lg text-xs font-semibold hover:bg-stone-300">
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tabel Monitoring Data Admin -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                    <h3 class="text-base font-bold mb-4 border-b pb-2 text-stone-800">Rekapitulasi Kamar & Penghuni (Admin Only)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-huma-card border-b text-stone-600">
+                                    <th class="p-3">Kamar & Tipe</th>
+                                    <th class="p-3">Nama Penghuni</th>
+                                    <th class="p-3">No. HP</th>
+                                    <th class="p-3">KTP</th>
+                                    <th class="p-3">Tgl / Est. Masuk</th>
+                                    <th class="p-3">Harga / DP</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 text-center">Aksi Pengelolaan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelAdminBody" class="divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABEL ARSIP RIWAYAT PENGHUNI LAMA -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-base font-bold text-stone-800">📜 Riwayat Mantan Penghuni (Arsip)</h3>
+                    <button onclick="clearHistory()" class="text-rose-600 hover:underline text-xs font-semibold">Bersihkan Riwayat</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-stone-100 border-b text-stone-600">
+                                <th class="p-3">Nama Penghuni</th>
+                                <th class="p-3">No. HP</th>
+                                <th class="p-3">Pekerjaan</th>
+                                <th class="p-3">Kamar Pernah Ditempati</th>
+                                <th class="p-3">Tanggal Masuk</th>
+                                <th class="p-3">Tanggal Keluar</th>
+                                <th class="p-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelRiwayatBody" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- MODAL POPUP FORMULIR BOOKING CUSTOMER -->
+    <div id="bookingModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative border border-stone-200">
+            <button onclick="closeBookingModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
+            <h3 class="text-lg font-bold mb-1 text-center text-huma-brown">📝 Formulir Booking Kamar</h3>
+            <p id="bookingModalSub" class="text-xs text-stone-500 text-center mb-4">Isi data diri Anda di bawah ini untuk memesan kamar</p>
+            
+            <form onsubmit="prosesSubmitBooking(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Pilih Unit Kamar Tersedia</label>
+                    <select id="userBookingKamarSelect" required class="w-full px-3 py-2 border rounded-lg text-sm bg-stone-50 font-bold text-stone-800 focus:ring-2 focus:ring-huma-sage outline-none">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Nama Lengkap (Sesuai KTP) <span class="text-rose-500">*</span></label>
+                    <input type="text" id="userBookingNama" required placeholder="Masukkan Nama Lengkap Sesuai KTP" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">No. HP / WhatsApp <span class="text-rose-500">*</span></label>
+                    <input type="tel" id="userBookingHp" required placeholder="Contoh: 081234567890" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Pekerjaan Spesifik <span class="text-rose-500">*</span></label>
+                    <input type="text" id="userBookingPekerjaan" required placeholder="Misal: Dosen UPR / PNS Dinas Kesehatan" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Estimasi Tanggal Masuk <span class="text-rose-500">*</span></label>
+                    <input type="date" id="userBookingTglMasuk" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg text-[11px] text-amber-900 leading-relaxed">
+                    📌 <strong>Catatan:</strong> Setelah formulir dikirim, sistem akan mengarahkan Anda ke WhatsApp Pemilik Kost untuk instruksi transfer DP (Rp 400.000) dan pengiriman foto KTP.
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-bold text-xs hover:bg-emerald-700 transition shadow-sm">
+                        📲 Kirim & Lanjut ke WA
+                    </button>
+                    <button type="button" onclick="closeBookingModal()" class="bg-stone-200 text-stone-700 px-4 py-2.5 rounded-lg text-xs font-semibold hover:bg-stone-300 transition">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL RE-CHECKIN PENGHUNI LAMA -->
+    <div id="recheckinModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative border border-stone-200">
+            <h3 class="text-lg font-bold mb-2 text-center text-huma-brown">🔁 Check-in Ulang Penghuni</h3>
+            <p id="recheckinInfo" class="text-xs text-stone-600 text-center mb-4"></p>
+            
+            <form onsubmit="prosesRecheckin(event)" class="space-y-4">
+                <input type="hidden" id="recheckinRiwayatIndex">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Pilih Kamar Kosong</label>
+                    <select id="recheckinKamarSelect" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Tanggal Masuk Baru</label>
+                    <input type="date" id="recheckinTglMasuk" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-emerald-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-emerald-700 transition">Konfirmasi Masuk</button>
+                    <button type="button" onclick="closeRecheckinModal()" class="bg-stone-200 text-stone-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-stone-300 transition">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP PREVIEW GAMBAR SLIDER INTERAKTIF -->
+    <div id="imageModal" onclick="closeImageModal()" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50">
+        <div class="relative max-w-4xl w-full flex flex-col items-center justify-center" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-white font-bold text-xl hover:text-stone-300 flex items-center gap-1">
+                ✕ Tutup
+            </button>
+
+            <div class="relative w-full flex items-center justify-center">
+                <button id="btnPrevImg" onclick="changeModalImage(-1)" class="absolute left-2 md:-left-12 bg-black/40 hover:bg-black/70 text-white font-bold text-2xl p-3 rounded-full transition z-10">
+                    ❮
+                </button>
+
+                <img id="modalImg" src="" alt="Preview Foto" class="max-h-[75vh] w-auto max-w-full rounded-2xl shadow-2xl border border-white/20 object-contain transition-all duration-200">
+
+                <button id="btnNextImg" onclick="changeModalImage(1)" class="absolute right-2 md:-right-12 bg-black/40 hover:bg-black/70 text-white font-bold text-2xl p-3 rounded-full transition z-10">
+                    ❯
+                </button>
+            </div>
+
+            <div class="flex items-center gap-3 mt-4">
+                <span id="modalCaption" class="text-white text-sm font-bold bg-black/60 px-4 py-1.5 rounded-full border border-white/10"></span>
+                <span id="modalCounter" class="text-stone-300 text-xs font-semibold bg-stone-800/80 px-3 py-1.5 rounded-full"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP LOGIN (FIREBASE AUTHENTICATION) -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative border border-stone-200">
+            <h3 class="text-lg font-bold mb-1 text-center text-huma-brown">Login Pengelola Kost</h3>
+            <p class="text-[11px] text-stone-500 text-center mb-4">Masuk menggunakan akun Firebase Authentication Admin</p>
+            <form onsubmit="prosesLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Email Admin</label>
+                    <input type="email" id="adminEmail" required placeholder="admin@humadamaikost.com" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Password</label>
+                    <input type="password" id="adminPassword" required placeholder="Masukkan Password" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-huma-sage outline-none">
+                </div>
+                <div id="loginError" class="hidden text-rose-600 text-xs text-center font-bold">
+                    Email atau password salah!
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" id="btnSubmitLogin" class="flex-1 bg-huma-brown text-white py-2 rounded-lg font-bold text-sm hover:bg-amber-900 transition">Login</button>
+                    <button type="button" onclick="toggleModalLogin(false)" class="bg-stone-200 text-stone-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-stone-300 transition">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // KONSTANTA KONTAK & DATA DUMMY REKENING
+        const WA_ADMIN_NUMBER = "6285828215188";
+        const REKENING_DUMMY = "0243-0104-XXXX-XXX";
+        const PEMILIK_REKENING_DUMMY = "Admin Huma Damai";
+
+        const GOOGLE_MAPS_SHORT_LINK = "https://maps.app.goo.gl/2of3VZW4MAZ5BGFy8?g_st=iw";
+        const ALAMAT_KOST = "Kost Huma Damai, Jl. Kinibalu Gg. Damai No. 44, Palangka, Kec. Jekan Raya, Kota Palangka Raya, Kalimantan Tengah 74874";
+
+        function copyAlamatKost() {
+            navigator.clipboard.writeText(`${ALAMAT_KOST}\nGoogle Maps: ${GOOGLE_MAPS_SHORT_LINK}`);
+            alert("Alamat & Link Google Maps Kost Huma Damai berhasil disalin!");
+        }
+
+        // DAFTAR GALERI FOTO PER TIPE KOST
+        const galleryData = {
+            'Type A': [
+                { src: 'Kamar tampak depan.jpeg', caption: '[Type A] Kamar Tampak Depan' },
+                { src: 'Kamar bagian dalam.jpeg', caption: '[Type A] Kamar Bagian Dalam' },
+                { src: 'Kasur.jpeg', caption: '[Type A] Kasur' },
+                { src: 'Lemari dan wastafel.jpeg', caption: '[Type A] Lemari & Wastafel' },
+                { src: 'Kamar mandi dalam.jpeg', caption: '[Type A] Kamar Mandi Dalam' },
+                { src: 'Meteran.jpeg', caption: '[Type A] Meteran Listrik' }
+            ],
+            'Type B': [
+                { src: 'Huma Damai Kost Coming Soon.png', caption: '[Type B] Segera Hadir - Coming Soon' }
+            ]
+        };
+
+        // KETERANGAN LUAS KAMAR PER TIPE
+        const roomSpecs = {
+            'Type A': 'Ukuran Kamar Standar',
+            'Type B': 'Ukuran Kamar Lebih Luas (Coming Soon)'
+        };
+
+        let activeGalleryType = 'Type A';
+        let currentGalleryIndex = 0;
+        let activeCatalogFilter = 'Semua';
+
+        // INISIALISASI FIREBASE DARI config.js
+        let db = null;
+        let auth = null;
+
+        if (typeof window.FIREBASE_CONFIG !== 'undefined' && window.FIREBASE_CONFIG.apiKey) {
+            firebase.initializeApp(window.FIREBASE_CONFIG);
+            db = firebase.database();
+            auth = firebase.auth();
+        }
+
+        const defaultKamarTypeA = [
+            { tipe: "Type A", nomor: "Kamar A1", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1400000, dp: 400000, ktp: "Belum", status: "Kosong" },
+            { tipe: "Type A", nomor: "Kamar A2", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1400000, dp: 400000, ktp: "Belum", status: "Kosong" },
+            { tipe: "Type A", nomor: "Kamar A3", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1400000, dp: 400000, ktp: "Belum", status: "Kosong" },
+            { tipe: "Type A", nomor: "Kamar A4", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1400000, dp: 400000, ktp: "Belum", status: "Kosong" },
+            { tipe: "Type A", nomor: "Kamar A5", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1400000, dp: 400000, ktp: "Belum", status: "Kosong" }
+        ];
+
+        const defaultKamarTypeB = [
+            { tipe: "Type B", nomor: "Kamar B1", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1600000, dp: 400000, ktp: "Belum", status: "Coming Soon" },
+            { tipe: "Type B", nomor: "Kamar B2", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1600000, dp: 400000, ktp: "Belum", status: "Coming Soon" },
+            { tipe: "Type B", nomor: "Kamar B3", nama: "", hp: "", pekerjaan: "", tglMasuk: "", harga: 1600000, dp: 400000, ktp: "Belum", status: "Coming Soon" }
+        ];
+
+        let defaultKamar = [...defaultKamarTypeA, ...defaultKamarTypeB];
+        let dataKost = [];
+        let riwayatPenghuni = [];
+
+        function openRoomGallery(type, photoIndex = 0) {
+            activeGalleryType = type;
+            openImageModal(photoIndex);
+        }
+
+        function openImageModal(index) {
+            currentGalleryIndex = index;
+            updateModalImageDisplay();
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        function changeModalImage(step) {
+            const list = galleryData[activeGalleryType] || [];
+            if (list.length <= 1) return;
+            currentGalleryIndex += step;
+            if (currentGalleryIndex < 0) {
+                currentGalleryIndex = list.length - 1;
+            } else if (currentGalleryIndex >= list.length) {
+                currentGalleryIndex = 0;
+            }
+            updateModalImageDisplay();
+        }
+
+        function updateModalImageDisplay() {
+            const list = galleryData[activeGalleryType] || [];
+            const currentObj = list[currentGalleryIndex];
+            const imgEl = document.getElementById('modalImg');
+            imgEl.src = currentObj.src;
+            imgEl.onerror = function() {
+                this.src = 'https://via.placeholder.com/600x400?text=' + encodeURIComponent(currentObj.caption);
+            };
+            document.getElementById('modalCaption').innerText = currentObj.caption;
+            document.getElementById('modalCounter').innerText = `${currentGalleryIndex + 1} / ${list.length}`;
+
+            const showArrows = list.length > 1;
+            document.getElementById('btnPrevImg').classList.toggle('hidden', !showArrows);
+            document.getElementById('btnNextImg').classList.toggle('hidden', !showArrows);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (!modal.classList.contains('hidden')) {
+                if (event.key === 'ArrowLeft') changeModalImage(-1);
+                else if (event.key === 'ArrowRight') changeModalImage(1);
+                else if (event.key === 'Escape') closeImageModal();
+            }
+        });
+
+        function sortDataKost() {
+            dataKost.sort((a, b) => {
+                const tipeA = a.tipe || (Number(a.harga) >= 1600000 ? 'Type B' : 'Type A');
+                const tipeB = b.tipe || (Number(b.harga) >= 1600000 ? 'Type B' : 'Type A');
+                if (tipeA !== tipeB) return tipeA.localeCompare(tipeB);
+                return (a.nomor || '').localeCompare((b.nomor || ''), undefined, { numeric: true, sensitivity: 'base' });
+            });
+        }
+
+        function initDataSync() {
+            if (!db) {
+                dataKost = [...defaultKamar];
+                sortDataKost();
+                renderCustomer();
+                renderAdminUIOnly();
+                renderRiwayatUIOnly();
+                return;
+            }
+
+            if (auth) {
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        document.getElementById('adminView').classList.remove('hidden');
+                        document.getElementById('btnLogin').classList.add('hidden');
+                        document.getElementById('btnLogout').classList.remove('hidden');
+                    } else {
+                        document.getElementById('adminView').classList.add('hidden');
+                        document.getElementById('btnLogin').classList.remove('hidden');
+                        document.getElementById('btnLogout').classList.add('hidden');
+                    }
+                });
+            }
+
+            db.ref('dataKost').on('value', (snapshot) => {
+                const val = snapshot.val();
+                if (val && Array.isArray(val) && val.length > 0) {
+                    dataKost = val.map(item => ({
+                        ...item,
+                        tipe: item.tipe || (Number(item.harga) >= 1600000 ? 'Type B' : 'Type A')
+                    }));
+                } else {
+                    dataKost = [...defaultKamar];
+                }
+                sortDataKost();
+                renderCustomer();
+                renderAdminUIOnly();
+            }, () => {
+                dataKost = [...defaultKamar];
+                sortDataKost();
+                renderCustomer();
+                renderAdminUIOnly();
+            });
+
+            db.ref('riwayatPenghuni').on('value', (snapshot) => {
+                riwayatPenghuni = snapshot.val() || [];
+                renderRiwayatUIOnly();
+            }, () => {
+                riwayatPenghuni = [];
+                renderRiwayatUIOnly();
+            });
+        }
+
+        function saveData() {
+            sortDataKost();
+            if (db && auth && auth.currentUser) {
+                db.ref('dataKost').set(dataKost).catch((err) => {
+                    alert("Gagal menyimpan ke database: " + err.message);
+                });
+            } else {
+                renderCustomer();
+                renderAdminUIOnly();
+            }
+        }
+
+        function saveRiwayat() {
+            if (db && auth && auth.currentUser) {
+                db.ref('riwayatPenghuni').set(riwayatPenghuni).catch((err) => {
+                    alert("Gagal menyimpan riwayat: " + err.message);
+                });
+            } else {
+                renderRiwayatUIOnly();
+            }
+        }
+
+        function autoSetHargaByTipe() {
+            const tipe = document.getElementById('tipeKamar').value;
+            const hargaInput = document.getElementById('hargaKamar');
+            hargaInput.value = tipe === 'Type B' ? 1600000 : 1400000;
+        }
+
+        function setCatalogFilter(filter) {
+            activeCatalogFilter = filter;
+            const btnAll = document.getElementById('filterAll');
+            const btnA = document.getElementById('filterTypeA');
+            const btnB = document.getElementById('filterTypeB');
+
+            const inactiveClass = "px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 transition";
+            btnAll.className = inactiveClass;
+            btnA.className = inactiveClass;
+            btnB.className = inactiveClass;
+
+            if (filter === 'Semua') {
+                btnAll.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-huma-brown text-white shadow-sm transition";
+            } else if (filter === 'Type A') {
+                btnA.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-huma-sage text-white shadow-sm transition";
+            } else if (filter === 'Type B') {
+                btnB.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-huma-brown text-white shadow-sm transition";
+            }
+
+            renderCustomer();
+        }
+
+        function openBookingModal(targetIndex = null) {
+            const kamarKosongIndices = [];
+            dataKost.forEach((k, idx) => {
+                if (k.status === 'Kosong') kamarKosongIndices.push(idx);
+            });
+
+            if (kamarKosongIndices.length === 0) {
+                alert("Mohon maaf, saat ini seluruh kamar yang tersedia sudah penuh (Type B berstatus Coming Soon)!");
+                return;
+            }
+
+            const selectEl = document.getElementById('userBookingKamarSelect');
+            selectEl.innerHTML = '';
+
+            kamarKosongIndices.forEach(idx => {
+                const item = dataKost[idx];
+                const tipeLabel = item.tipe || 'Type A';
+                const hargaLabel = Number(item.harga).toLocaleString('id-ID');
+                const selectedAttr = (targetIndex === idx) ? 'selected' : '';
+                selectEl.innerHTML += `<option value="${idx}" ${selectedAttr}>[${tipeLabel}] ${item.nomor} - Rp ${hargaLabel}/bln</option>`;
+            });
+
+            document.getElementById('userBookingNama').value = '';
+            document.getElementById('userBookingHp').value = '';
+            document.getElementById('userBookingPekerjaan').value = '';
+            document.getElementById('userBookingTglMasuk').value = new Date().toISOString().split('T')[0];
+
+            document.getElementById('bookingModal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').classList.add('hidden');
+        }
+
+        function prosesSubmitBooking(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('userBookingKamarSelect').value);
+            const nama = document.getElementById('userBookingNama').value.trim();
+            const hp = document.getElementById('userBookingHp').value.trim();
+            const pekerjaan = document.getElementById('userBookingPekerjaan').value.trim();
+            const tglMasuk = document.getElementById('userBookingTglMasuk').value;
+
+            if (idx >= 0 && idx < dataKost.length) {
+                let tglFormatted = tglMasuk;
+                const parts = tglMasuk.split('-');
+                if (parts.length === 3) {
+                    tglFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+
+                const nomorKamar = dataKost[idx].nomor;
+                const tipeKamar = dataKost[idx].tipe || 'Type A';
+                const hargaKamar = Number(dataKost[idx].harga).toLocaleString('id-ID');
+
+                const waText = encodeURIComponent(
+                    `Halo Admin Huma Damai Kost, saya ingin melakukan booking kamar melalui website dengan rincian:\n\n` +
+                    `📌 *UNIT:* ${nomorKamar} (${tipeKamar} - Rp ${hargaKamar}/bln)\n` +
+                    `👤 *Nama (KTP):* ${nama}\n` +
+                    `📱 *No. HP:* ${hp}\n` +
+                    `💼 *Pekerjaan:* ${pekerjaan}\n` +
+                    `📅 *Estimasi Masuk:* ${tglFormatted}\n\n` +
+                    `Mohon info nomor rekening Bank BRI untuk pembayaran DP Booking (Rp 400.000). Foto KTP siap dilampirkan.`
+                );
+
+                closeBookingModal();
+                window.open(`https://wa.me/${WA_ADMIN_NUMBER}?text=${waText}`, '_blank');
+            }
+        }
+
+        function copyRekeningAdmin() {
+            navigator.clipboard.writeText(REKENING_DUMMY);
+            alert(`Nomor Rekening BRI (${REKENING_DUMMY} a.n ${PEMILIK_REKENING_DUMMY}) berhasil disalin!`);
+        }
+
+        function toggleBookingFields() {
+            const status = document.getElementById('statusKamar').value;
+            const dpContainer = document.getElementById('dpContainer');
+            if (status === 'Booking') {
+                dpContainer.classList.remove('hidden');
+            } else {
+                dpContainer.classList.add('hidden');
+            }
+        }
+
+        function updateBannerBadge() {
+            const badge = document.getElementById('bannerBadge');
+            const kosongA = dataKost.filter(i => i.status === 'Kosong' && (i.tipe || 'Type A') === 'Type A').length;
+            const kosongB = dataKost.filter(i => i.status === 'Kosong' && i.tipe === 'Type B').length;
+            const comingSoonB = dataKost.filter(i => i.status === 'Coming Soon' && i.tipe === 'Type B').length;
+
+            if (kosongA > 0 || kosongB > 0) {
+                let text = `Tersedia Kosong: ${kosongA} Type A`;
+                if (kosongB > 0) text += ` & ${kosongB} Type B`;
+                else if (comingSoonB > 0) text += ` | Type B (${comingSoonB} Unit Coming Soon)`;
+                badge.innerText = text;
+                badge.className = "bg-huma-sage text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide transition-all";
+            } else if (comingSoonB > 0) {
+                badge.innerText = `Type A Penuh | Type B (${comingSoonB} Unit Coming Soon)`;
+                badge.className = "bg-purple-700 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide transition-all";
+            } else {
+                badge.innerText = "Kamar Penuh / Ter-booking";
+                badge.className = "bg-rose-700 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide transition-all";
+            }
+        }
+
+        function renderCustomer() {
+            sortDataKost();
+            const container = document.getElementById('katalogKamar');
+            container.innerHTML = '';
+
+            const totalAll = dataKost.length;
+            const totalA = dataKost.filter(k => (k.tipe || 'Type A') === 'Type A').length;
+            const totalB = dataKost.filter(k => k.tipe === 'Type B').length;
+
+            document.getElementById('filterAll').innerText = `Semua Tipe (${totalAll} Unit)`;
+            document.getElementById('filterTypeA').innerText = `🏠 Type A - Rp 1,4 Juta (${totalA} Unit)`;
+            document.getElementById('filterTypeB').innerText = `🌟 Type B - Rp 1,6 Juta (${totalB} Unit)`;
+
+            dataKost.forEach((item, idx) => {
+                const tipe = item.tipe || 'Type A';
+                if (activeCatalogFilter !== 'Semua' && tipe !== activeCatalogFilter) return;
+
+                const isKosong = item.status === 'Kosong';
+                const isBooking = item.status === 'Booking';
+                const isComingSoon = item.status === 'Coming Soon';
+                const isTypeB = tipe === 'Type B';
+                const nomorDisplay = item.nomor || "Tanpa No";
+                const hargaDisplay = Number(item.harga || 0).toLocaleString('id-ID');
+                const photoList = galleryData[tipe] || [];
+                const previewPhoto = isComingSoon
+                    ? 'Huma Damai Kost Coming Soon.png'
+                    : (photoList[0] ? photoList[0].src : 'Kamar tampak depan.jpeg');
+                const specDesc = roomSpecs[tipe] || '';
+                const photoCountLabel = isComingSoon
+                    ? '🟣 Coming Soon'
+                    : `🖼️ ${photoList.length} Foto (${tipe})`;
+
+                container.innerHTML += `
+                    <div class="bg-white rounded-2xl shadow-sm border ${isTypeB ? 'border-amber-300' : 'border-stone-200'} overflow-hidden hover:shadow-md transition flex flex-col justify-between">
+                        <div>
+                            <div class="${isTypeB ? 'bg-amber-50/90 border-amber-200' : 'bg-huma-card border-stone-200'} border-b p-3.5 flex justify-between items-center">
+                                <span class="font-bold text-huma-brown text-base">${nomorDisplay}</span>
+                                <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${isTypeB ? 'bg-huma-brown text-white' : 'bg-huma-sage text-white'}">
+                                    ${isTypeB ? '🌟 Type B' : '🏠 Type A'}
+                                </span>
+                            </div>
+
+                            <div onclick="openRoomGallery('${tipe}', 0)" class="relative h-44 bg-stone-100 cursor-pointer group overflow-hidden border-b border-stone-100">
+                                <img src="${previewPhoto}" alt="${nomorDisplay}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://via.placeholder.com/600x400?text=${encodeURIComponent(tipe)}'">
+                                <div class="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                    <span class="bg-black/75 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow">
+                                        ${isComingSoon ? '🔍 Klik Perbesar Poster' : `📸 Klik Lihat Foto ${tipe}`}
+                                    </span>
+                                </div>
+                                <span class="absolute bottom-2 right-2 bg-black/65 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md backdrop-blur-sm">
+                                    ${photoCountLabel}
+                                </span>
+                            </div>
+
+                            <div class="p-5 space-y-2.5">
+                                <p class="text-[11px] font-semibold ${isTypeB ? 'text-huma-brown bg-amber-50 border border-amber-200' : 'text-stone-700 bg-stone-100'} px-2.5 py-1 rounded-md inline-block">
+                                    📐 ${specDesc}
+                                </p>
+                                <p class="text-xs text-stone-600 leading-relaxed">
+                                    <strong>Fasilitas:</strong> Kasur, Lemari, AC, Meja, Wastafel, WiFi, Kamar Mandi Dalam, Meteran Sendiri
+                                </p>
+                                <p class="text-xl font-bold text-huma-brown pt-1">Rp ${hargaDisplay} <span class="text-xs font-normal text-stone-500">/ bulan</span></p>
+                                <p class="text-[11px] text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200">📌 DP Booking: Rp 400.000 (Wajib KTP)</p>
+                            </div>
+                        </div>
+                        <div class="p-5 pt-0">
+                            ${isKosong ? `
+                                <span class="block text-center bg-huma-sage/20 text-huma-sage text-xs font-bold py-1.5 rounded-lg mb-3">Tersedia</span>
+                                <button onclick="openBookingModal(${idx})" 
+                                   class="w-full text-center bg-emerald-600 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-emerald-700 transition shadow-sm">
+                                   📲 Booking DP via WA (Rp 400.000)
+                                </button>
+                            ` : isBooking ? `
+                                <span class="block text-center bg-amber-100 text-amber-800 text-xs font-bold py-1.5 rounded-lg mb-3">Ter-booking (DP)</span>
+                                <button disabled class="w-full bg-stone-200 text-stone-400 py-2.5 rounded-lg text-sm font-bold cursor-not-allowed">Menunggu Check-in</button>
+                            ` : isComingSoon ? `
+                                <span class="block text-center bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold py-1.5 rounded-lg mb-3">🟣 Coming Soon</span>
+                                <button disabled class="w-full bg-purple-50 text-purple-700 border border-purple-200 py-2.5 rounded-lg text-sm font-bold cursor-not-allowed">Segera Hadir (Coming Soon)</button>
+                            ` : `
+                                <span class="block text-center bg-stone-100 text-stone-500 text-xs font-bold py-1.5 rounded-lg mb-3">Sudah Terisi</span>
+                                <button disabled class="w-full bg-stone-200 text-stone-400 py-2.5 rounded-lg text-sm font-bold cursor-not-allowed">Tidak Tersedia</button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+
+            updateBannerBadge();
+        }
+
+        function renderAdminUIOnly() {
+            const tbody = document.getElementById('tabelAdminBody');
+            tbody.innerHTML = '';
+
+            dataKost.forEach((item, index) => {
+                const isKosong = item.status === 'Kosong';
+                const isBooking = item.status === 'Booking';
+                const isComingSoon = item.status === 'Coming Soon';
+                const tipe = item.tipe || 'Type A';
+                const isTypeB = tipe === 'Type B';
+                const nomorDisplay = item.nomor || "-";
+                const hargaDisplay = Number(item.harga || 0).toLocaleString('id-ID');
+                const dpDisplay = Number(item.dp || 400000).toLocaleString('id-ID');
+                const tglDisplay = item.tglMasuk ? new Date(item.tglMasuk).toLocaleDateString('id-ID') : '-';
+
+                let statusBadgeHtml = '';
+                if (isKosong) {
+                    statusBadgeHtml = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 inline-block">🟢 Kosong</span>`;
+                } else if (isBooking) {
+                    statusBadgeHtml = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 inline-block">🟡 Booking</span>`;
+                } else if (isComingSoon) {
+                    statusBadgeHtml = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300 inline-block">🟣 Coming Soon</span>`;
+                } else {
+                    statusBadgeHtml = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 text-rose-800 inline-block">🔴 Terisi</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-3">
+                            <p class="font-bold text-stone-800">${nomorDisplay}</p>
+                            <span class="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded ${isTypeB ? 'bg-amber-100 text-huma-brown' : 'bg-stone-100 text-stone-600'}">
+                                ${tipe}
+                            </span>
+                        </td>
+                        <td class="p-3 font-semibold text-stone-700">
+                            ${item.nama || '-'}
+                            ${item.pekerjaan ? `<p class="text-[11px] font-normal text-stone-500">💼 ${item.pekerjaan}</p>` : ''}
+                        </td>
+                        <td class="p-3 text-xs text-stone-600">${item.hp ? `<a href="https://wa.me/${item.hp.replace(/^0/, '62')}" target="_blank" class="text-emerald-600 hover:underline font-bold">📲 ${item.hp}</a>` : '-'}</td>
+                        <td class="p-3 text-xs font-semibold ${item.ktp === 'Sudah Terverifikasi' ? 'text-emerald-700' : 'text-stone-400'}">${item.ktp || 'Belum'}</td>
+                        <td class="p-3 text-xs text-stone-600">${tglDisplay}</td>
+                        <td class="p-3 text-xs">
+                            <p class="font-bold">Rp ${hargaDisplay}</p>
+                            ${isBooking ? `<p class="text-amber-800 text-[11px]">DP: Rp ${dpDisplay}</p>` : ''}
+                        </td>
+                        <td class="p-3">
+                            ${statusBadgeHtml}
+                        </td>
+                        <td class="p-3 text-center space-x-1">
+                            ${(!isKosong && !isComingSoon) ? `<button onclick="checkoutKamar(${index})" class="text-amber-800 hover:bg-amber-100 font-bold text-xs bg-amber-50 px-2 py-1 rounded border border-amber-300">🚪 Keluar (Arsip)</button>` : ''}
+                            <button onclick="editKamar(${index})" class="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200">Edit</button>
+                            <button onclick="hapusKamar(${index})" class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 px-2 py-1 rounded border border-rose-200">Hapus Permanen</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            updateBannerBadge();
+        }
+
+        function renderRiwayatUIOnly() {
+            const tbody = document.getElementById('tabelRiwayatBody');
+            tbody.innerHTML = '';
+
+            if (riwayatPenghuni.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-xs text-stone-400">Belum ada data mantan penghuni dalam arsip</td></tr>`;
+                return;
+            }
+
+            riwayatPenghuni.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-3 font-semibold text-stone-800">${item.nama}</td>
+                        <td class="p-3 text-xs text-stone-600">${item.hp || '-'}</td>
+                        <td class="p-3 text-xs text-stone-600">${item.pekerjaan || '-'}</td>
+                        <td class="p-3 font-medium text-stone-600">${item.nomor}</td>
+                        <td class="p-3 text-xs text-stone-500">${item.tglMasuk || '-'}</td>
+                        <td class="p-3 text-xs text-rose-600 font-semibold">${item.tglKeluar}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="openRecheckinModal(${index})" class="text-emerald-700 hover:bg-emerald-100 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-300 transition">
+                                🔁 Check-in Ulang
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openRecheckinModal(riwayatIndex) {
+            const mantan = riwayatPenghuni[riwayatIndex];
+            const kamarKosongList = dataKost.filter(item => item.status === 'Kosong');
+
+            if (kamarKosongList.length === 0) {
+                alert("Maaf, saat ini seluruh kamar sedang penuh!");
+                return;
+            }
+
+            document.getElementById('recheckinRiwayatIndex').value = riwayatIndex;
+            document.getElementById('recheckinInfo').innerText = `Proses sewa ulang untuk: ${mantan.nama} (${mantan.hp || 'No HP -'})`;
+
+            const selectKamar = document.getElementById('recheckinKamarSelect');
+            selectKamar.innerHTML = '';
+            kamarKosongList.forEach(k => {
+                selectKamar.innerHTML += `<option value="${k.nomor}">[${k.tipe || 'Type A'}] ${k.nomor} (Rp ${Number(k.harga).toLocaleString('id-ID')})</option>`;
+            });
+
+            document.getElementById('recheckinTglMasuk').value = new Date().toISOString().split('T')[0];
+            document.getElementById('recheckinModal').classList.remove('hidden');
+        }
+
+        function closeRecheckinModal() {
+            document.getElementById('recheckinModal').classList.add('hidden');
+        }
+
+        function prosesRecheckin(e) {
+            e.preventDefault();
+            const rIdx = parseInt(document.getElementById('recheckinRiwayatIndex').value);
+            const mantan = riwayatPenghuni[rIdx];
+            const targetNomorKamar = document.getElementById('recheckinKamarSelect').value;
+            const tglMasukBaru = document.getElementById('recheckinTglMasuk').value;
+
+            const kamarIdx = dataKost.findIndex(k => k.nomor === targetNomorKamar);
+            if (kamarIdx !== -1) {
+                dataKost[kamarIdx].nama = mantan.nama;
+                dataKost[kamarIdx].hp = mantan.hp;
+                dataKost[kamarIdx].pekerjaan = mantan.pekerjaan;
+                dataKost[kamarIdx].tglMasuk = tglMasukBaru;
+                dataKost[kamarIdx].ktp = 'Sudah Terverifikasi';
+                dataKost[kamarIdx].status = 'Terisi';
+
+                closeRecheckinModal();
+                saveData();
+                alert(`Berhasil! ${mantan.nama} telah masuk kembali ke ${targetNomorKamar}.`);
+            }
+        }
+
+        function checkoutKamar(index) {
+            const item = dataKost[index];
+            if (confirm(`Apakah penghuni ${item.nama || 'ini'} sudah keluar? Data akan dipindahkan ke Tabel Riwayat.`)) {
+                if (item.nama && item.nama.trim() !== '') {
+                    const today = new Date().toLocaleDateString('id-ID');
+                    riwayatPenghuni.unshift({
+                        nama: item.nama,
+                        hp: item.hp || '',
+                        pekerjaan: item.pekerjaan || '',
+                        nomor: `${item.nomor} (${item.tipe || 'Type A'})`,
+                        tglMasuk: item.tglMasuk ? new Date(item.tglMasuk).toLocaleDateString('id-ID') : '-',
+                        tglKeluar: today
+                    });
+                    saveRiwayat();
+                }
+                item.status = 'Kosong';
+                item.nama = '';
+                item.hp = '';
+                item.pekerjaan = '';
+                item.tglMasuk = '';
+                item.ktp = 'Belum';
+                item.dp = 400000;
+
+                saveData();
+            }
+        }
+
+        function simpanKamar(e) {
+            e.preventDefault();
+            const editIdx = parseInt(document.getElementById('editIndex').value);
+            const tipe = document.getElementById('tipeKamar').value;
+            const nomor = document.getElementById('noKamar').value;
+            const nama = document.getElementById('namaPenghuni').value;
+            const hp = document.getElementById('noHpPenghuni').value;
+            const pekerjaan = document.getElementById('pekerjaanPenghuni').value;
+            const tglMasuk = document.getElementById('tglMasuk').value;
+            const harga = document.getElementById('hargaKamar').value;
+            const dp = document.getElementById('nominalDp').value || 400000;
+            const ktp = document.getElementById('ktpStatus').value;
+            const status = document.getElementById('statusKamar').value;
+
+            if (editIdx === -1) {
+                dataKost.push({ tipe, nomor, nama, hp, pekerjaan, tglMasuk, harga, dp, ktp, status });
+            } else {
+                dataKost[editIdx] = { ...dataKost[editIdx], tipe, nomor, nama, hp, pekerjaan, tglMasuk, harga, dp, ktp, status };
+            }
+
+            resetForm();
+            saveData();
+        }
+
+        function editKamar(index) {
+            const item = dataKost[index];
+            document.getElementById('editIndex').value = index;
+            document.getElementById('tipeKamar').value = item.tipe || 'Type A';
+            document.getElementById('noKamar').value = item.nomor;
+            document.getElementById('namaPenghuni').value = item.nama || '';
+            document.getElementById('noHpPenghuni').value = item.hp || '';
+            document.getElementById('pekerjaanPenghuni').value = item.pekerjaan || '';
+            document.getElementById('tglMasuk').value = item.tglMasuk || '';
+            document.getElementById('hargaKamar').value = item.harga;
+            document.getElementById('nominalDp').value = item.dp || 400000;
+            document.getElementById('ktpStatus').value = item.ktp || 'Belum';
+            document.getElementById('statusKamar').value = item.status;
+            
+            toggleBookingFields();
+            document.getElementById('formTitle').innerText = "Edit Data " + item.nomor;
+        }
+
+        function hapusKamar(index) {
+            if (confirm('Hapus unit kamar ini secara permanen dari sistem? (Data tidak masuk ke riwayat)')) {
+                dataKost.splice(index, 1);
+                saveData();
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('Hapus seluruh catatan riwayat mantan penghuni?')) {
+                riwayatPenghuni = [];
+                saveRiwayat();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('adminForm').reset();
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('tipeKamar').value = "Type A";
+            document.getElementById('hargaKamar').value = "1400000";
+            document.getElementById('nominalDp').value = "400000";
+            document.getElementById('formTitle').innerText = "Tambah / Edit Data Kamar";
+            toggleBookingFields();
+        }
+
+        function toggleModalLogin(show) {
+            document.getElementById('loginModal').classList.toggle('hidden', !show);
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function prosesLogin(e) {
+            e.preventDefault();
+            if (!auth) {
+                alert("Firebase Authentication belum dikonfigurasi pada config.js");
+                return;
+            }
+            const email = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const btn = document.getElementById('btnSubmitLogin');
+
+            btn.disabled = true;
+            btn.innerText = "Memverifikasi...";
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    toggleModalLogin(false);
+                    document.getElementById('adminEmail').value = '';
+                    document.getElementById('adminPassword').value = '';
+                })
+                .catch((error) => {
+                    const errEl = document.getElementById('loginError');
+                    errEl.innerText = "Login gagal: " + error.message;
+                    errEl.classList.remove('hidden');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = "Login";
+                });
+        }
+
+        function logout() {
+            if (auth) {
+                auth.signOut();
+            }
+        }
+
+        initDataSync();
+    </script>
+</body>
+</html>
